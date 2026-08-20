@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import BookCard from '../components/BookCard'
 
 function BooksPage() {
-  const [books, setBooks] = useState([])
+  const [data, setData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -12,8 +12,12 @@ function BooksPage() {
     const fetchBooks = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/v1/books')
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}`)
+        }
+
         const data = await response.json()
-        setBooks(data)
+        setData(data)
         setLoading(false)
       } catch (err) {
         setError(err.message)
@@ -45,9 +49,9 @@ function BooksPage() {
   return (
     <div className="books-page">
       <h1>Library Shelves</h1>
-      <p className="books-count">Total books: {books.length}</p>
+      <p className="books-count">Total books: {data.length}</p>
       <div className="books-grid">
-        {books.map((book) => (
+        {data.map((book) => (
           <BookCard
             key={book.id}
             title={book.title}

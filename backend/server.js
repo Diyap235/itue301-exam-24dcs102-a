@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
+import dbRoutes from './routes/dbRoutes.js'
 
 dotenv.config()
 
@@ -68,111 +69,8 @@ if (process.env.MONGO_URI) {
     .catch((err) => console.log('MongoDB connection error:', err.message))
 }
 
-// ===== TASK 5: Mongoose Schemas =====
-
-// Book schema
-const bookSchema = new mongoose.Schema({
-  title: { type: String, required: true },
-  author: { type: String, required: true },
-  category: { type: String, required: true },
-  isbn: { type: String, unique: true, sparse: true },
-  available: { type: Boolean, default: true }
-})
-
-// Member schema
-const memberSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  phone: String,
-  department: { type: String, required: true }
-})
-
-// Borrowing schema
-const borrowingSchema = new mongoose.Schema({
-  memberId: { type: mongoose.Schema.Types.ObjectId, ref: 'Member', required: true },
-  bookId: { type: mongoose.Schema.Types.ObjectId, ref: 'Book', required: true },
-  borrowDate: { type: Date, required: true },
-  returnDate: { type: Date, required: true },
-  status: { 
-    type: String, 
-    enum: ['borrowed', 'returned', 'overdue'],
-    default: 'borrowed'
-  }
-})
-
-const Book = mongoose.model('Book', bookSchema)
-const Member = mongoose.model('Member', memberSchema)
-const Borrowing = mongoose.model('Borrowing', borrowingSchema)
-
-// ===== TASK 5: Routes to demonstrate schema and validation =====
-
-// GET all books from DB
-app.get('/api/v1/db/books', async (req, res) => {
-  try {
-    const books = await Book.find()
-    res.status(200).json(books)
-  } catch (err) {
-    res.status(400).json({ error: err.message })
-  }
-})
-
-// POST create book (proves schema works)
-app.post('/api/v1/db/books', async (req, res) => {
-  try {
-    const { title, author, category, isbn, available } = req.body
-    const book = new Book({ title, author, category, isbn, available })
-    await book.save()
-    res.status(201).json(book)
-  } catch (err) {
-    // return clean error message, not raw Mongoose error
-    res.status(400).json({ error: err.message })
-  }
-})
-
-// GET all members from DB
-app.get('/api/v1/db/members', async (req, res) => {
-  try {
-    const members = await Member.find()
-    res.status(200).json(members)
-  } catch (err) {
-    res.status(400).json({ error: err.message })
-  }
-})
-
-// POST create member (proves schema works)
-app.post('/api/v1/db/members', async (req, res) => {
-  try {
-    const { name, email, phone, department } = req.body
-    const member = new Member({ name, email, phone, department })
-    await member.save()
-    res.status(201).json(member)
-  } catch (err) {
-    // return clean error message, not raw Mongoose error
-    res.status(400).json({ error: err.message })
-  }
-})
-
-// GET all borrowings from DB
-app.get('/api/v1/db/borrowings', async (req, res) => {
-  try {
-    const borrowings = await Borrowing.find().populate('memberId bookId')
-    res.status(200).json(borrowings)
-  } catch (err) {
-    res.status(400).json({ error: err.message })
-  }
-})
-
-// POST create borrowing (with validation)
-app.post('/api/v1/db/borrowings', async (req, res) => {
-  try {
-    const { memberId, bookId, borrowDate, returnDate, status } = req.body
-    const borrowing = new Borrowing({ memberId, bookId, borrowDate, returnDate, status })
-    await borrowing.save()
-    res.status(201).json(borrowing)
-  } catch (err) {
-    res.status(400).json({ error: err.message })
-  }
-})
+// Mount Task 5 database routes separately from the Task 3 in-memory routes.
+app.use('/api/v1/db', dbRoutes)
 
 // ===== TASK 3: Global Error Handler (MUST be last) =====
 app.use((err, req, res, next) => {
@@ -191,9 +89,6 @@ app.listen(PORT, () => {
   console.log('TASK 5 - MongoDB Routes (if MONGO_URI is set):')
   console.log('  GET  /api/v1/db/books')
   console.log('  POST /api/v1/db/books')
-  console.log('  GET  /api/v1/db/members')
   console.log('  POST /api/v1/db/members')
-  console.log('  GET  /api/v1/db/borrowings')
-  console.log('  POST /api/v1/db/borrowings')
   console.log('=====================')
 })
